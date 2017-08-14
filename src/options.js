@@ -24,4 +24,10 @@ export default {
 
 	/** Hook invoked immediately before a component is unmounted. */
 	// beforeUnmount(component) { }
+
+	/** Hook invoked immediately after a node is removed. */
+	// nodeRemoved(node) { }
+
+	/** Hook invoked immediately after a listener is updated. */
+	// listenerUpdated(component) { }
 };
