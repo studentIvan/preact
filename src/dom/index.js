@@ -20,6 +20,7 @@ export function createNode(nodeName, isSvg) {
 export function removeNode(node) {
 	let parentNode = node.parentNode;
 	if (parentNode) parentNode.removeChild(node);
+	if (options.nodeRemoved) options.nodeRemoved(node);
 }
 
 
@@ -72,6 +73,7 @@ export function setAccessor(node, name, old, value, isSvg) {
 			node.removeEventListener(name, eventProxy, useCapture);
 		}
 		(node._listeners || (node._listeners = {}))[name] = value;
+		if (options.listenerUpdated) options.listenerUpdated(node, name);
 	}
 	else if (name!=='list' && name!=='type' && !isSvg && name in node) {
 		setProperty(node, name, value==null ? '' : value);
