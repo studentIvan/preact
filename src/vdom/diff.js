@@ -228,6 +228,9 @@ function innerDiffNode(dom, vchildren, context, mountAll, isHydrating, component
 
 			f = originalChildren[i];
 			if (child && child!==dom && child!==f) {
+				if (key!=null && options.keyAttribute) {
+					child.setAttribute(options.keyAttribute, key);
+				}
 				if (f==null) {
 					dom.appendChild(child);
 				}
