@@ -15,6 +15,7 @@
       "$prevState": "__s",
       "$_parentComponent": "__u",
       "$base": "__e",
+      "$_ancestorComponent": "__a",
       "$_componentConstructor": "_componentConstructor",
       "$__html": "__html",
       "$_component": "_component",
