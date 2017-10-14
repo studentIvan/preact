@@ -98,10 +98,20 @@ function setProperty(node, name, value) {
 	} catch (e) { }
 }
 
+const allowedEventKeys = ["altKey", "animationName", "button", "buttons", "ctrlKey", "elapsedTime", "key", "keyCode", "metaKey", "offsetX", "offsetY", "propertyName", "repeat", "shiftKey", "timeStamp"];
 
 /** Proxy an event to hooked event handlers
  *	@private
  */
 function eventProxy(e) {
-	return this._listeners[e.type](options.event && options.event(e) || e);
+	let simpleEvent = {};
+	if ("value" in event.target && event.target.value !== "") {
+		simpleEvent.value = event.target.value;
+	}
+	for (let key in e) {
+		if (allowedEventKeys.indexOf(key) != -1) {
+			simpleEvent[key] = e[key];
+		}
+	}
+	return this._listeners[e.type](options.event && options.event(simpleEvent) || simpleEvent);
 }

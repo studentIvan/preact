@@ -347,6 +347,62 @@ declare namespace JSX {
 		d:string;
 	}
 
+	interface Event {
+		readonly timeStamp: number;
+		readonly value?: string;
+	}
+
+	type ClipboardEvent = Event;
+
+	type CompositionEvent = Event;
+
+	type DragEvent = MouseEvent;
+
+	type FocusEvent = Event;
+
+	interface KeyboardEvent extends Event {
+		readonly altKey: boolean;
+	    readonly keyCode: number;
+		readonly ctrlKey: boolean;
+		readonly metaKey: boolean;
+		readonly repeat: boolean;
+		readonly shiftKey: boolean;
+	}
+
+	interface MouseEvent extends UIEvent {
+		readonly altKey: number;
+		readonly button: number;
+		readonly buttons: number;
+		readonly ctrlKey: boolean;
+		readonly metaKey: boolean;
+		readonly offsetX: number;
+		readonly offsetY: number;
+		readonly shiftKey: boolean;
+	}
+
+	interface TouchEvent extends UIEvent {
+		readonly altKey: boolean;
+		readonly charCode: number;
+		readonly ctrlKey: boolean;
+		readonly keyCode: number;
+		readonly metaKey: boolean;
+		readonly shiftKey: boolean;
+	}
+
+	type UIEvent = Event;
+
+	type WheelEvent = UIEvent;
+
+	interface AnimationEvent extends Event {
+	    readonly animationName: string;
+	    readonly elapsedTime: number;
+	}
+
+	interface TransitionEvent extends Event {
+	    readonly elapsedTime: number;
+	    readonly propertyName: string;
+	}
+
 	interface EventHandler<E extends Event> {
 		(event:E):void;
 	}
