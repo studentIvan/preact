@@ -50,14 +50,15 @@ describe('refs', () => {
 		let root = render(<Foo ref={ref} />, scratch);
 		expect(ref).to.have.been.calledOnce;
 
-		ref.reset();
+		ref.resetHistory();
 		render(<Foo ref={ref} />, scratch, root);
 		expect(ref).to.have.been.calledOnce;
 
-		ref.reset();
+		ref.resetHistory();
 		render(<span />, scratch, root);
 		expect(ref).to.have.been.calledOnce.and.calledWith(null);
 	});
+
 
 	it('should not pass ref into component as a prop', () => {
 		let foo = spy('foo'),
