@@ -105,8 +105,8 @@ const allowedEventKeys = ["altKey", "animationName", "button", "buttons", "ctrlK
  */
 function eventProxy(e) {
 	let simpleEvent = {};
-	if ("value" in event.target && event.target.value !== "") {
-		simpleEvent.value = event.target.value;
+	if ("value" in e.target && e.target.value !== "") {
+		simpleEvent.value = e.target.value;
 	}
 	for (let key in e) {
 		if (allowedEventKeys.indexOf(key) != -1) {
