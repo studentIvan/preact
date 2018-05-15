@@ -46,14 +46,16 @@ declare namespace preact {
 	 * of child {VNode}s and a key. The key is used by preact for
 	 * internal purposes.
 	 */
-	interface VNode<P> {
+	interface VNode<P = any> {
 		nodeName: ComponentFactory<P> | string;
 		attributes: P;
 		children: Array<VNode<any> | string>;
 		key?: Key | null;
 	}
 
-	type RenderableProps<P> = Readonly<P> & Readonly<{ children?: ComponentChildren }>;
+	type RenderableProps<P, RefType = any> = Readonly<
+		P & Attributes & { children?: ComponentChildren }
+	>;
 
 	interface FunctionalComponent<P = {}> {
 		(props: RenderableProps<P>, context?: any): VNode<any> | null;
@@ -79,6 +81,7 @@ declare namespace preact {
 		shouldComponentUpdate?(nextProps: Readonly<P>, nextState: Readonly<S>, nextContext: any): boolean;
 		componentWillUpdate?(nextProps: Readonly<P>, nextState: Readonly<S>, nextContext: any): void;
 		componentDidUpdate?(previousProps: Readonly<P>, previousState: Readonly<S>, previousContext: any): void;
+		componentDidCatch?(error: any): void;
 	}
 
 	abstract class Component<P, S> {
@@ -96,7 +99,7 @@ declare namespace preact {
 
 		forceUpdate(callback?: () => void): void;
 
-		abstract render(props?: RenderableProps<P>, state?: Readonly<S>, context?: any): JSX.Element | null;
+		abstract render(props?: RenderableProps<P>, state?: Readonly<S>, context?: any): ComponentChild;
 	}
 
 	function h<P>(
@@ -570,8 +573,8 @@ declare global {
 			charSet?: string;
 			challenge?: string;
 			checked?: boolean;
-			class?: string | { [key: string]: boolean };
-			className?: string | { [key: string]: boolean };
+			class?: string;
+			className?: string;
 			cols?: number;
 			colSpan?: number;
 			content?: string;

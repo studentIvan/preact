@@ -1,4 +1,4 @@
-import { SYNC_RENDER, NO_RENDER, FORCE_RENDER, ASYNC_RENDER, ATTR_KEY } from '../constants';
+import { SYNC_RENDER, NO_RENDER, FORCE_RENDER, ASYNC_RENDER, REATTEMPT_RENDER, ATTR_KEY } from '../constants';
 import options from '../options';
 import { extend } from '../util';
 import { enqueueRender } from '../render-queue';
@@ -38,7 +38,7 @@ export function setComponentProps(component, props, opts, context, mountAll) {
 	component._disable = false;
 
 	if (opts!==NO_RENDER) {
-		if (opts===SYNC_RENDER || options.syncComponentUpdates!==false || !component.base) {
+		if ((opts&SYNC_RENDER) || options.syncComponentUpdates!==false || !component.base) {
 			renderComponent(component, SYNC_RENDER, mountAll);
 		}
 		else {
@@ -83,7 +83,8 @@ export function renderComponent(component, opts, mountAll, isChild) {
 		initialBase = isUpdate || nextBase,
 		initialChildComponent = component._component,
 		skip = false,
-		rendered, inst, cbase;
+		rendered, inst, cbase,
+		exception, hasException;
 
 	// if updating
 	if (isUpdate) {
@@ -148,14 +149,18 @@ export function renderComponent(component, opts, mountAll, isChild) {
 					cbase = component._component = null;
 				}
 
-				if (initialBase || opts===SYNC_RENDER) {
+				if (initialBase || (opts&SYNC_RENDER)) {
 					if (cbase) cbase._component = null;
 					base = diff(cbase, rendered, context, mountAll || !isUpdate, initialBase && initialBase.parentNode, component);
 				}
 			}
 		} catch (e) {
+			if (opts == REATTEMPT_RENDER) {
+				throw e;
+			}
 			base = initialBase || document.createTextNode("");
-			catchErrorInComponent(e, component);
+			exception = e;
+			hasException = true;
 		}
 
 		if (initialBase && base!==initialBase && inst!==initialChildComponent) {
@@ -196,17 +201,21 @@ export function renderComponent(component, opts, mountAll, isChild) {
 		// flushMounts();
 
 		if (component.componentDidUpdate) {
-			try {
-				component.componentDidUpdate(previousProps, previousState, previousContext);
-			} catch (e) {
-				catchErrorInComponent(e, component._ancestorComponent);
-			}
+			component.componentDidUpdate(previousProps, previousState, previousContext);
 		}
 		if (options.afterUpdate) options.afterUpdate(component);
 	}
 
 	if (component._renderCallbacks!=null) {
 		while (component._renderCallbacks.length) component._renderCallbacks.pop().call(component);
+	}
+
+	if (hasException) {
+		flushMounts();
+		catchErrorInComponent(exception, component);
+		if (component._dirty) {
+			renderComponent(component, REATTEMPT_RENDER, mountAll, isChild);
+		}
 	}
 
 	if (!diffLevel && !isChild) flushMounts();
@@ -272,7 +281,13 @@ export function unmountComponent(component) {
 
 	component._disable = true;
 
-	if (component.componentWillUnmount) component.componentWillUnmount();
+	if (component.componentWillUnmount) {
+		try {
+			component.componentWillUnmount();
+		} catch (e) {
+			catchErrorInComponent(e, component._ancestorComponent);
+		}
+	}
 
 	component.base = null;
 
