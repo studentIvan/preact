@@ -15,10 +15,10 @@ const ReactDOM = {
 	render(component, dom) {
 		React.render(component, dom, dom.firstChild);
 		let escaping;
-		let callback;
-		while (callback = flushQueue.pop()) {
+		let flush;
+		while ((flush = flushQueue.pop())) {
 			try {
-				callback();
+				flush();
 			} catch (e) {
 				escaping = e;
 			}
@@ -738,7 +738,7 @@ describe('ReactErrorBoundaries Compatibility', () => {
 	});
 
 	// TODO: Re-enable test when module-style components are supported
-	if (false) it('renders an error state if module-style context provider throws in componentWillMount', () => {
+	/*it('renders an error state if module-style context provider throws in componentWillMount', () => {
 		function BrokenComponentWillMountWithContext() {
 			return {
 				getChildContext() {
@@ -761,7 +761,7 @@ describe('ReactErrorBoundaries Compatibility', () => {
 			container,
 		);
 		expect(container.firstChild.textContent).to.be.equal('Caught an error: Hello.');
-	});
+	});*/
 
 	it('mounts the error message if mounting fails', () => {
 		function renderError(error) {
@@ -2089,7 +2089,7 @@ describe('ReactErrorBoundaries Compatibility', () => {
 	});
 
 	// TODO: Re-enable test when unstable_batchedUpdates is supported
-	if (false) it('propagates uncaught error inside unbatched initial mount', () => {
+	/*it('propagates uncaught error inside unbatched initial mount', () => {
 		function Foo() {
 			throw new Error('foo error');
 		}
@@ -2099,10 +2099,10 @@ describe('ReactErrorBoundaries Compatibility', () => {
 				ReactDOM.render(<Foo />, container);
 			});
 		}).to.throw('foo error');
-	});
+	});*/
 
 	// TODO: Re-enable test when getSnapshotBeforeUpdate is supported
-	if (false) it('handles errors that occur in before-mutation commit hook', () => {
+	/*it('handles errors that occur in before-mutation commit hook', () => {
 		const errors = [];
 		let caughtError;
 		class Parent extends React.Component {
@@ -2140,5 +2140,5 @@ describe('ReactErrorBoundaries Compatibility', () => {
 		expect(errors).to.equal(['child sad', 'parent sad']);
 		// Error should be the first thrown
 		expect(caughtError.message).to.be.equal('child sad');
-	});
+	});*/
 });
