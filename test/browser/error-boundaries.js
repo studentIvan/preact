@@ -2083,7 +2083,7 @@ describe('ReactErrorBoundaries Compatibility', () => {
 			caughtError = e;
 		}
 
-		expect(errors).to.equal(['child sad', 'parent sad']);
+		expect(errors).to.be.deep.equal(['child sad', 'parent sad']);
 		// Error should be the first thrown
 		expect(caughtError.message).to.be.equal('child sad');
 	});
