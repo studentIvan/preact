@@ -444,6 +444,19 @@ declare global {
 		    readonly propertyName: string;
 		}
 
+		interface PointerEvent extends MouseEvent {
+			readonly pointerId: number;
+			readonly width: number
+			readonly height: number;
+			readonly pressure: number;
+			readonly tangentialPressure: number;
+			readonly tiltX: number;
+			readonly tiltY: number;
+			readonly twist: number;
+			readonly pointerType: string;
+			readonly isPrimary: boolean;
+		}
+
 		interface EventHandler<E extends Event> {
 			(event: E): void;
 		}
