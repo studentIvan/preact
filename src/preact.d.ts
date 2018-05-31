@@ -27,8 +27,7 @@ declare namespace preact {
 	}
 
 	interface ClassAttributes<T> extends Attributes {
-		// DOM is inaccessible
-		//ref?: Ref<T>;
+		ref?: Ref<T>;
 	}
 
 	interface PreactDOMAttributes {
@@ -54,7 +53,7 @@ declare namespace preact {
 	}
 
 	type RenderableProps<P, RefType = any> = Readonly<
-		P & Attributes & { children?: ComponentChildren }
+		P & Attributes & { children?: ComponentChildren; ref?: Ref<RefType> }
 	>;
 
 	interface FunctionalComponent<P = {}> {
@@ -93,6 +92,7 @@ declare namespace preact {
 		state: Readonly<S>;
 		props: RenderableProps<P>;
 		context: any;
+		base?: HTMLElement;
 
 		setState<K extends keyof S>(state: Pick<S, K>, callback?: () => void): void;
 		setState<K extends keyof S>(fn: (prevState: S, props: P) => Pick<S, K>, callback?: () => void): void;
