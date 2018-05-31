@@ -130,8 +130,6 @@ export function setAccessor(node, name, old, value, isSvg) {
 }
 
 
-const allowedEventKeys = ["altKey", "animationName", "button", "buttons", "ctrlKey", "elapsedTime", "key", "keyCode", "metaKey", "offsetX", "offsetY", "propertyName", "repeat", "shiftKey", "timeStamp"];
-
 /**
  * Proxy an event to hooked event handlers
  * @param {Event} e The event object from the browser
@@ -143,8 +141,17 @@ function eventProxy(e) {
 		simpleEvent.value = e.target.value;
 	}
 	for (let key in e) {
-		if (allowedEventKeys.indexOf(key) != -1) {
-			simpleEvent[key] = e[key];
+		let value = e[key];
+		switch (typeof value) {
+			case "object":
+				if (value !== null) {
+					break;
+				}
+			case "boolean":
+			case "string":
+			case "number":
+				simpleEvent[key] = value;
+				break;
 		}
 	}
 	return this._listeners[e.type](options.event && options.event(simpleEvent) || simpleEvent);
