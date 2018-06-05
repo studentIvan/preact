@@ -6,7 +6,7 @@ const renderQueue = [];
 options.debounceRendering = (callback) => renderQueue.push(callback);
 function rerender() {
 	let renderCallback;
-	while (renderCallback = renderQueue.shift()) {
+	while ((renderCallback = renderQueue.shift())) {
 		renderCallback();
 	}
 }
@@ -33,6 +33,11 @@ describe('Lifecycle methods', () => {
 	});
 
 	it('should call nested new lifecycle methods in the right order', () => {
+		let updateOuterState;
+		let updateInnerState;
+		let forceUpdateOuter;
+		let forceUpdateInner;
+
 		let log;
 		const logger = function(msg) {
 			return function() {
@@ -41,20 +46,31 @@ describe('Lifecycle methods', () => {
 				return true;
 			};
 		};
+
 		class Outer extends Component {
 			static getDerivedStateFromProps() {
 				log.push('outer getDerivedStateFromProps');
 				return null;
 			}
+			constructor() {
+				super();
+				log.push('outer constructor');
+
+				this.state = { value: 0 };
+				forceUpdateOuter = () => this.forceUpdate();
+				updateOuterState = () => this.setState({
+					value: (this.state.value + 1) % 2
+				});
+			}
 			render() {
+				log.push('outer render');
 				return (
 					<div>
-						<Inner x={this.props.x} />
+						<Inner x={this.props.x} outerValue={this.state.value} />
 					</div>
 				);
 			}
 		}
-
 		Object.assign(Outer.prototype, {
 			componentDidMount: logger('outer componentDidMount'),
 			shouldComponentUpdate: logger('outer shouldComponentUpdate'),
@@ -68,8 +84,19 @@ describe('Lifecycle methods', () => {
 				log.push('inner getDerivedStateFromProps');
 				return null;
 			}
+			constructor() {
+				super();
+				log.push('inner constructor');
+
+				this.state = { value: 0 };
+				forceUpdateInner = () => this.forceUpdate();
+				updateInnerState = () => this.setState({
+					value: (this.state.value + 1) % 2
+				});
+			}
 			render() {
-				return <span>{this.props.x}</span>;
+				log.push('inner render');
+				return <span>{this.props.x} {this.props.outerValue} {this.state.value}</span>;
 			}
 		}
 		Object.assign(Inner.prototype, {
@@ -80,16 +107,21 @@ describe('Lifecycle methods', () => {
 			componentWillUnmount: logger('inner componentWillUnmount')
 		});
 
+		// Constructor & mounting
 		log = [];
 		render(<Outer x={1} />, scratch);
 		expect(log).to.deep.equal([
+			'outer constructor',
 			'outer getDerivedStateFromProps',
+			'outer render',
+			'inner constructor',
 			'inner getDerivedStateFromProps',
+			'inner render',
 			'inner componentDidMount',
 			'outer componentDidMount'
 		]);
 
-		// Dedup warnings
+		// Outer & Inner props update
 		log = [];
 		render(<Outer x={2} />, scratch, scratch.firstChild);
 		// Note: we differ from react here in that we apply changes to the dom
@@ -101,13 +133,80 @@ describe('Lifecycle methods', () => {
 		expect(log).to.deep.equal([
 			'outer getDerivedStateFromProps',
 			'outer shouldComponentUpdate',
+			'outer render',
 			'outer getSnapshotBeforeUpdate',
 			'inner getDerivedStateFromProps',
 			'inner shouldComponentUpdate',
+			'inner render',
 			'inner getSnapshotBeforeUpdate',
 			'inner componentDidUpdate',
 			'outer componentDidUpdate'
 		]);
+
+		// Outer state update & Inner props update
+		log = [];
+		updateOuterState();
+		rerender();
+		expect(log).to.deep.equal([
+			'outer getDerivedStateFromProps',
+			'outer shouldComponentUpdate',
+			'outer render',
+			'outer getSnapshotBeforeUpdate',
+			'inner getDerivedStateFromProps',
+			'inner shouldComponentUpdate',
+			'inner render',
+			'inner getSnapshotBeforeUpdate',
+			'inner componentDidUpdate',
+			'outer componentDidUpdate'
+		]);
+
+		// Inner state update
+		log = [];
+		updateInnerState();
+		rerender();
+		expect(log).to.deep.equal([
+			'inner getDerivedStateFromProps',
+			'inner shouldComponentUpdate',
+			'inner render',
+			'inner getSnapshotBeforeUpdate',
+			'inner componentDidUpdate'
+		]);
+
+		// Force update Outer
+		log = [];
+		forceUpdateOuter();
+		rerender();
+		expect(log).to.deep.equal([
+			'outer getDerivedStateFromProps',
+			'outer render',
+			'outer getSnapshotBeforeUpdate',
+			'inner getDerivedStateFromProps',
+			'inner shouldComponentUpdate',
+			'inner render',
+			'inner getSnapshotBeforeUpdate',
+			'inner componentDidUpdate',
+			'outer componentDidUpdate'
+		]);
+
+		// Force update Inner
+		log = [];
+		forceUpdateInner();
+		rerender();
+		expect(log).to.deep.equal([
+			'inner getDerivedStateFromProps',
+			'inner render',
+			'inner getSnapshotBeforeUpdate',
+			'inner componentDidUpdate'
+		]);
+
+		// Unmounting Outer & Inner
+		log = [];
+		render(<table />, scratch, scratch.firstChild);
+		expect(log).to.deep.equal([
+			'outer componentWillUnmount',
+			'inner componentWillUnmount'
+		]);
+
 	});
 
 	describe('static getDerivedStateFromProps', () => {
@@ -1250,6 +1349,35 @@ describe('Lifecycle methods', () => {
 			render(<ErrorReceiverComponent><ErrorAdapterComponent><ErrorGeneratorComponent/></ErrorAdapterComponent></ErrorReceiverComponent>, scratch);
 			rerender();
 			expect(ErrorAdapterComponent.prototype.componentDidCatch).to.have.been.called;
+			expect(ErrorReceiverComponent.prototype.componentDidCatch).to.have.been.called;
+			expect(scratch).to.have.property('textContent', 'Error: Error!');
+		});
+
+		it('should not bubble on caught errors', () => {
+			class TopLevelReceiverComponent extends Component {
+				componentDidCatch(error) {
+					this.setState({ error });
+				}
+				render() {
+					return <div>{this.state.error ? String(this.state.error) : this.props.children}</div>;
+				}
+			}
+			class ErrorReceiverComponent extends Component {
+				componentDidCatch(error) {
+					this.setState({ error });
+				}
+				render() {
+					return <div>{this.state.error ? String(this.state.error) : this.props.children}</div>;
+				}
+			}
+			function ErrorGeneratorComponent() {
+				throw new Error("Error!");
+			}
+			sinon.spy(TopLevelReceiverComponent.prototype, 'componentDidCatch');
+			sinon.spy(ErrorReceiverComponent.prototype, 'componentDidCatch');
+			render(<TopLevelReceiverComponent><ErrorReceiverComponent><ErrorGeneratorComponent/></ErrorReceiverComponent></TopLevelReceiverComponent>, scratch);
+			rerender();
+			expect(TopLevelReceiverComponent.prototype.componentDidCatch).not.to.have.been.called;
 			expect(ErrorReceiverComponent.prototype.componentDidCatch).to.have.been.called;
 			expect(scratch).to.have.property('textContent', 'Error: Error!');
 		});

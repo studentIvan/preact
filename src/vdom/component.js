@@ -97,7 +97,7 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 		skip = false,
 		snapshot = previousContext,
 		rendered, inst, cbase,
-		exception, caught = component._caught;
+		exception, clearCaught = component._caught;
 
 	try {
 		if (component.constructor.getDerivedStateFromProps) {
@@ -178,6 +178,7 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 				}
 			} catch (e) {
 				exception = e;
+				clearCaught = false;
 				if (!base) {
 					base = initialBase || document.createTextNode("");
 				}
@@ -228,7 +229,7 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 
 		while (component._renderCallbacks.length) component._renderCallbacks.pop().call(component);
 
-		if (caught) {
+		if (clearCaught) {
 			component._caught = false;
 		}
 
@@ -251,6 +252,8 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
  * @param {import('../vnode').VNode} vnode A Component-referencing VNode
  * @param {object} context The current context
  * @param {boolean} mountAll Whether or not to immediately mount all components
+ * @param {import('../component').Component} [ancestorComponent] The nearest ancestor component
+ *  beneath which the new component will be mounted
  * @returns {import('../dom').PreactElement} The created/mutated element
  * @private
  */
@@ -301,10 +304,10 @@ export function buildComponentFromVNode(dom, vnode, context, mountAll, ancestorC
  * @private
  */
 export function unmountComponent(component) {
-	if (options.beforeUnmount) options.beforeUnmount(component);
-
 	if (component._disable) return;
 	component._disable = true;
+
+	if (options.beforeUnmount) options.beforeUnmount(component);
 
 	let base = component.base;
 
