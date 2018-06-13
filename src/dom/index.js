@@ -141,17 +141,15 @@ function eventProxy(e) {
 		simpleEvent.value = e.target.value;
 	}
 	for (let key in e) {
-		let value = e[key];
-		switch (typeof value) {
-			case "object":
-				if (value !== null) {
+		if (Object.hasOwnProperty.call(e, key)) {
+			let value = e[key];
+			switch (typeof value) {
+				case "boolean":
+				case "string":
+				case "number":
+					simpleEvent[key] = value;
 					break;
-				}
-			case "boolean":
-			case "string":
-			case "number":
-				simpleEvent[key] = value;
-				break;
+			}
 		}
 	}
 	return this._listeners[e.type](options.event && options.event(simpleEvent) || simpleEvent);
