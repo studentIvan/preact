@@ -24,10 +24,10 @@ export function setComponentProps(component, props, renderMode, context, mountAl
 
 	if (typeof component.constructor.getDerivedStateFromProps === 'undefined') {
 		if (!component.base || mountAll) {
-			if (component.componentWillMount) component.componentWillMount();
+			if (component.componentWillMount) awaitAndRaiseErrorToComponent(component.componentWillMount(), component._ancestorComponent);
 		}
 		else if (component.componentWillReceiveProps) {
-			component.componentWillReceiveProps(props, context);
+			awaitAndRaiseErrorToComponent(component.componentWillReceiveProps(props, context), component._ancestorComponent);
 		}
 	}
 
@@ -58,7 +58,7 @@ export function catchErrorInComponent(error, component) {
 	for (; component; component = component._ancestorComponent) {
 		if (component.componentDidCatch && !component._caught) {
 			try {
-				component.componentDidCatch(error);
+				awaitAndRaiseErrorToComponent(component.componentDidCatch(error), component._ancestorComponent);
 				component._caught = true;
 				enqueueRender(component);
 				return;
@@ -70,6 +70,14 @@ export function catchErrorInComponent(error, component) {
 	throw error;
 }
 
+export function awaitAndRaiseErrorToComponent(result, component) {
+	if (result && result.then) {
+		result.then(void 0, (error) => {
+			catchErrorInComponent(error, component);
+		});
+	}
+	return result;
+}
 
 
 /**
@@ -116,7 +124,7 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 				skip = true;
 			}
 			else if (component.componentWillUpdate) {
-				component.componentWillUpdate(props, state, context);
+				awaitAndRaiseErrorToComponent(component.componentWillUpdate(props, state, context), component._ancestorComponent);
 			}
 			component.props = props;
 			component.state = state;
@@ -222,7 +230,7 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 			// flushMounts();
 
 			if (component.componentDidUpdate) {
-				component.componentDidUpdate(previousProps, previousState, snapshot);
+				awaitAndRaiseErrorToComponent(component.componentDidUpdate(previousProps, previousState, snapshot), component._ancestorComponent);
 			}
 			if (options.afterUpdate) options.afterUpdate(component);
 		}
@@ -313,7 +321,7 @@ export function unmountComponent(component) {
 
 	if (component.componentWillUnmount) {
 		try {
-			component.componentWillUnmount();
+			awaitAndRaiseErrorToComponent(component.componentWillUnmount(), component._ancestorComponent);
 		} catch (e) {
 			catchErrorInComponent(e, component._ancestorComponent);
 		}

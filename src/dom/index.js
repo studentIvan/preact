@@ -1,5 +1,6 @@
 import { IS_NON_DIMENSIONAL } from '../constants';
 import options from '../options';
+import { awaitAndRaiseErrorToComponent, catchErrorInComponent } from "../vdom/component";
 
 /**
  * A DOM event listener
@@ -129,6 +130,14 @@ export function setAccessor(node, name, old, value, isSvg) {
 	}
 }
 
+function nearestComponent(element) {
+	while (element) {
+		if (element._component) {
+			return element._component;
+		}
+		element = element.parentNode;
+	}
+}
 
 /**
  * Proxy an event to hooked event handlers
@@ -152,5 +161,13 @@ function eventProxy(e) {
 			}
 		}
 	}
-	return this._listeners[e.type](options.event && options.event(simpleEvent) || simpleEvent);
+	let component = nearestComponent(this);
+	if (component) {
+		component = component._ancestorComponent;
+	}
+	try {
+		return awaitAndRaiseErrorToComponent(this._listeners[e.type](options.event && options.event(simpleEvent) || simpleEvent), component);
+	} catch (e) {
+		catchErrorInComponent(e, component);
+	}
 }

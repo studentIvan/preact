@@ -1,6 +1,6 @@
 import { FORCE_RENDER } from './constants';
 import { extend } from './util';
-import { renderComponent } from './vdom/component';
+import { renderComponent, catchErrorInComponent } from './vdom/component';
 import { enqueueRender } from './render-queue';
 /**
  * Base Component class.
@@ -82,6 +82,15 @@ extend(Component.prototype, {
 	 *  ancestor's `getChildContext()`
 	 * @returns {import('./vnode').VNode | void}
 	 */
-	render() {}
+	render() {},
+
+	/**
+	 * Raises an error for an ancestor component to handle in its `componentDidCatch` method
+	 * @param {object} e The error to raise
+	 * @returns {void}
+	 */
+	raiseError(e) {
+		catchErrorInComponent(e, this._ancestorComponent);
+	}
 
 });

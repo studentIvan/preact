@@ -72,15 +72,15 @@ declare namespace preact {
 	type AnyComponent<P = {}, S = {}> = FunctionalComponent<P> | Component<P, S>;
 
 	interface Component<P = {}, S = {}> {
-		componentWillMount?(): void;
-		componentDidMount?(): void;
-		componentWillUnmount?(): void;
+		componentWillMount?(): void | Promise<void>;
+		componentDidMount?(): void | Promise<void>;
+		componentWillUnmount?(): void | Promise<void>
 		getChildContext?(): object;
 		componentWillReceiveProps?(nextProps: Readonly<P>, nextContext: any): void;
 		shouldComponentUpdate?(nextProps: Readonly<P>, nextState: Readonly<S>, nextContext: any): boolean;
-		componentWillUpdate?(nextProps: Readonly<P>, nextState: Readonly<S>, nextContext: any): void;
-		componentDidUpdate?(previousProps: Readonly<P>, previousState: Readonly<S>, previousContext: any): void;
-		componentDidCatch?(error: any): void;
+		componentWillUpdate?(nextProps: Readonly<P>, nextState: Readonly<S>, nextContext: any): void | Promise<void>;
+		componentDidUpdate?(previousProps: Readonly<P>, previousState: Readonly<S>, previousContext: any): void | Promise<void>;
+		componentDidCatch?(error: any): void | Promise<void>;
 	}
 
 	abstract class Component<P, S> {
@@ -98,6 +98,8 @@ declare namespace preact {
 		setState<K extends keyof S>(fn: (prevState: S, props: P) => Pick<S, K>, callback?: () => void): void;
 
 		forceUpdate(callback?: () => void): void;
+
+		raiseError(error: any): void;
 
 		abstract render(props?: RenderableProps<P>, state?: Readonly<S>, context?: any): ComponentChild;
 	}
@@ -458,7 +460,7 @@ declare global {
 		}
 
 		interface EventHandler<E extends Event> {
-			(event: E): void;
+			(event: E): void | Promise<void>;
 		}
 
 		type ClipboardEventHandler = EventHandler<ClipboardEvent>;

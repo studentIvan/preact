@@ -1,6 +1,6 @@
 import { ATTR_KEY } from '../constants';
 import { isSameNodeType, isNamedNode } from './index';
-import { buildComponentFromVNode, catchErrorInComponent } from './component';
+import { buildComponentFromVNode, catchErrorInComponent, awaitAndRaiseErrorToComponent } from './component';
 import { createNode, setAccessor } from '../dom/index';
 import { unmountComponent } from './component';
 import options from '../options';
@@ -28,7 +28,7 @@ export function flushMounts() {
 		if (options.afterMount) options.afterMount(c);
 		if (c.componentDidMount) {
 			try {
-				c.componentDidMount();
+				awaitAndRaiseErrorToComponent(c.componentDidMount(), c._ancestorComponent);
 			} catch (e) {
 				catchErrorInComponent(e, c._ancestorComponent);
 			}
