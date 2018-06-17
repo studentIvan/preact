@@ -149,17 +149,26 @@ function eventProxy(e) {
 	if ("value" in e.target && e.target.value !== "") {
 		simpleEvent.value = e.target.value;
 	}
+	let objectProto = simpleEvent.__proto__;
 	for (let key in e) {
-		if (Object.hasOwnProperty.call(e, key)) {
-			let value = e[key];
-			switch (typeof value) {
-				case "boolean":
-				case "string":
-				case "number":
-					simpleEvent[key] = value;
-					break;
+		let proto = e;
+		let value = e[key];
+		do {
+			if (Object.hasOwnProperty.call(proto.constructor, key) && proto.constructor[key] === value) {
+				break;
 			}
-		}
+			if (Object.hasOwnProperty.call(proto, key)) {
+				switch (typeof value) {
+					case "boolean":
+					case "string":
+					case "number":
+						simpleEvent[key] = value;
+						break;
+				}
+				break;
+			}
+			proto = proto.__proto__;
+		} while (proto && proto !== objectProto);
 	}
 	let component = nearestComponent(this);
 	if (component) {
