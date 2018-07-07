@@ -1,4 +1,3 @@
-import options from './options';
 import { defer } from './util';
 import { renderComponent } from './vdom/component';
 
@@ -14,7 +13,7 @@ let items = [];
  */
 export function enqueueRender(component) {
 	if (!component._dirty && (component._dirty = true) && items.push(component)==1) {
-		(options.debounceRendering || defer)(rerender);
+		(component._options.debounceRendering || defer)(rerender);
 	}
 }
 

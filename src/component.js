@@ -40,6 +40,8 @@ export function Component(props, context) {
 	this.state = this.state || {};
 
 	this._renderCallbacks = [];
+
+	this._options = undefined;
 }
 
 

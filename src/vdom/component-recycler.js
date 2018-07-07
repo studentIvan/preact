@@ -28,9 +28,13 @@ export function collectComponent(component) {
  * @param {object} context The initial context of the component
  * @param {import('../component').Component} [ancestorComponent] The nearest ancestor component beneath
  *  which the new component will be mounted
+ * @param {Object} options Render options
  * @returns {import('../component').Component}
  */
-export function createComponent(Ctor, props, context, ancestorComponent) {
+export function createComponent(Ctor, props, context, ancestorComponent, options) {
+	if (!options) {
+		throw new Error("Missing options!");
+	}
 	let list = components[Ctor.name],
 		inst;
 
@@ -43,6 +47,7 @@ export function createComponent(Ctor, props, context, ancestorComponent) {
 		inst.constructor = Ctor;
 		inst.render = doRender;
 	}
+	inst._options = options;
 	inst._ancestorComponent = ancestorComponent;
 
 	if (list) {

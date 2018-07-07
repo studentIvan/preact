@@ -3,7 +3,6 @@ import { isSameNodeType, isNamedNode } from './index';
 import { buildComponentFromVNode, catchErrorInComponent, awaitAndRaiseErrorToComponent } from './component';
 import { createNode, setAccessor } from '../dom/index';
 import { unmountComponent } from './component';
-import options from '../options';
 import { removeNode } from '../dom/index';
 
 /**
@@ -25,6 +24,7 @@ let hydrating = false;
 export function flushMounts() {
 	let c;
 	while ((c=mounts.pop())) {
+		const options = c._options;
 		if (options.afterMount) options.afterMount(c);
 		if (c.componentDidMount) {
 			try {
@@ -47,10 +47,11 @@ export function flushMounts() {
  * @param {Element} parent ?
  * @param {import('../component').Component} [componentRoot] The nearest ancestor component beneath
  *  which the diff will occur
+ * @param {Object} options Render options
  * @returns {import('../dom').PreactElement} The created/mutated element
  * @private
  */
-export function diff(dom, vnode, context, mountAll, parent, componentRoot) {
+export function diff(dom, vnode, context, mountAll, parent, componentRoot, options) {
 	// diffLevel having been 0 here indicates initial entry into the diff (not a subdiff)
 	if (!diffLevel++) {
 		// when first starting the diff, check if we're diffing an SVG or within an SVG
@@ -62,7 +63,7 @@ export function diff(dom, vnode, context, mountAll, parent, componentRoot) {
 
 	let ret;
 	try {
-		return ret = idiff(dom, vnode, context, mountAll, componentRoot);
+		return ret = idiff(dom, vnode, context, mountAll, componentRoot, options);
 	} finally {
 		// append the element if its a new parent
 		if (ret && parent && ret.parentNode!==parent) parent.appendChild(ret);
@@ -85,9 +86,10 @@ export function diff(dom, vnode, context, mountAll, parent, componentRoot) {
  * @param {boolean} mountAll Whether or not to immediately mount all components
  * @param {import('../component').Component} [componentRoot] The nearest ancestor component beneath
  *  which the diff will occur
+ * @param {Object} options Render options
  * @private
  */
-function idiff(dom, vnode, context, mountAll, componentRoot) {
+function idiff(dom, vnode, context, mountAll, componentRoot, options) {
 	let out = dom,
 		prevSvgMode = isSvgMode;
 
@@ -110,7 +112,7 @@ function idiff(dom, vnode, context, mountAll, componentRoot) {
 			out = document.createTextNode(vnode);
 			if (dom) {
 				if (dom.parentNode) dom.parentNode.replaceChild(out, dom);
-				recollectNodeTree(dom, true);
+				recollectNodeTree(dom, true, options);
 			}
 		}
 
@@ -123,7 +125,7 @@ function idiff(dom, vnode, context, mountAll, componentRoot) {
 	// If the VNode represents a Component, perform a component diff:
 	let vnodeName = vnode.nodeName;
 	if (typeof vnodeName==='function') {
-		return buildComponentFromVNode(dom, vnode, context, mountAll, componentRoot);
+		return buildComponentFromVNode(dom, vnode, context, mountAll, componentRoot, options);
 	}
 
 
@@ -144,7 +146,7 @@ function idiff(dom, vnode, context, mountAll, componentRoot) {
 			if (dom.parentNode) dom.parentNode.replaceChild(out, dom);
 
 			// recycle the old element (skips non-Element node types)
-			recollectNodeTree(dom, true);
+			recollectNodeTree(dom, true, options);
 		}
 	}
 
@@ -166,12 +168,12 @@ function idiff(dom, vnode, context, mountAll, componentRoot) {
 	}
 	// otherwise, if there are existing or new children, diff them:
 	else if (vchildren && vchildren.length || fc!=null) {
-		innerDiffNode(out, vchildren, context, mountAll, hydrating || props.dangerouslySetInnerHTML!=null, componentRoot);
+		innerDiffNode(out, vchildren, context, mountAll, hydrating || props.dangerouslySetInnerHTML!=null, componentRoot, options);
 	}
 
 
 	// Apply attributes/props from VNode to the DOM Element:
-	diffAttributes(out, vnode.attributes, props);
+	diffAttributes(out, vnode.attributes, props, options);
 
 
 	// restore previous SVG mode: (in case we're exiting an SVG namespace)
@@ -192,8 +194,9 @@ function idiff(dom, vnode, context, mountAll, componentRoot) {
  *  similar to hydration
  * @param {import('../component').Component} [componentRoot] The nearest ancestor component beneath
  *  which the diff will occur
+ * @param {Object} options Render options
  */
-function innerDiffNode(dom, vchildren, context, mountAll, isHydrating, componentRoot) {
+function innerDiffNode(dom, vchildren, context, mountAll, isHydrating, componentRoot, options) {
 	let originalChildren = dom.childNodes,
 		children = [],
 		keyed = {},
@@ -248,7 +251,7 @@ function innerDiffNode(dom, vchildren, context, mountAll, isHydrating, component
 			}
 
 			// morph the matched/found/created DOM child to match vchild (deep)
-			child = idiff(child, vchild, context, mountAll, componentRoot);
+			child = idiff(child, vchild, context, mountAll, componentRoot, options);
 
 			f = originalChildren[i];
 			if (child && child!==dom && child!==f) {
@@ -259,7 +262,7 @@ function innerDiffNode(dom, vchildren, context, mountAll, isHydrating, component
 					dom.appendChild(child);
 				}
 				else if (child===f.nextSibling) {
-					removeNode(f);
+					removeNode(f, options);
 				}
 				else {
 					dom.insertBefore(child, f);
@@ -271,12 +274,12 @@ function innerDiffNode(dom, vchildren, context, mountAll, isHydrating, component
 
 	// remove unused keyed children:
 	if (keyedLen) {
-		for (let i in keyed) if (keyed[i]!==undefined) recollectNodeTree(keyed[i], false);
+		for (let i in keyed) if (keyed[i]!==undefined) recollectNodeTree(keyed[i], false, options);
 	}
 
 	// remove orphaned unkeyed children:
 	while (min<=childrenLen) {
-		if ((child = children[childrenLen--])!==undefined) recollectNodeTree(child, false);
+		if ((child = children[childrenLen--])!==undefined) recollectNodeTree(child, false, options);
 	}
 }
 
@@ -288,8 +291,9 @@ function innerDiffNode(dom, vchildren, context, mountAll, isHydrating, component
  *  unmount/removal from
  * @param {boolean} [unmountOnly=false] If `true`, only triggers unmount
  *  lifecycle, skips removal
+ * @param {Object} options Render options
  */
-export function recollectNodeTree(node, unmountOnly) {
+export function recollectNodeTree(node, unmountOnly, options) {
 	let component = node._component;
 	if (component) {
 		// if node is owned by a Component, unmount that component (ends up recursing back here)
@@ -301,10 +305,10 @@ export function recollectNodeTree(node, unmountOnly) {
 		if (node[ATTR_KEY]!=null && node[ATTR_KEY].ref) node[ATTR_KEY].ref(null);
 
 		if (unmountOnly===false || node[ATTR_KEY]==null) {
-			removeNode(node);
+			removeNode(node, options);
 		}
 
-		removeChildren(node);
+		removeChildren(node, options);
 	}
 }
 
@@ -313,12 +317,13 @@ export function recollectNodeTree(node, unmountOnly) {
  * Recollect/unmount all children.
  *	- we use .lastChild here because it causes less reflow than .firstChild
  *	- it's also cheaper than accessing the .childNodes Live NodeList
+ * @param {Object} options Render options
  */
-export function removeChildren(node) {
+export function removeChildren(node, options) {
 	node = node.lastChild;
 	while (node) {
 		let next = node.previousSibling;
-		recollectNodeTree(node, true);
+		recollectNodeTree(node, true, options);
 		node = next;
 	}
 }
@@ -331,20 +336,20 @@ export function removeChildren(node) {
  * @param {object} old Current/previous attributes (from previous VNode or
  *  element's prop cache)
  */
-function diffAttributes(dom, attrs, old) {
+function diffAttributes(dom, attrs, old, options) {
 	let name;
 
 	// remove attributes no longer present on the vnode by setting them to undefined
 	for (name in old) {
 		if (!(attrs && attrs[name]!=null) && old[name]!=null) {
-			setAccessor(dom, name, old[name], old[name] = undefined, isSvgMode);
+			setAccessor(dom, name, old[name], old[name] = undefined, isSvgMode, options);
 		}
 	}
 
 	// add new & update changed attributes
 	for (name in attrs) {
 		if (name!=='children' && name!=='innerHTML' && (!(name in old) || attrs[name]!==(name==='value' || name==='checked' ? dom[name] : old[name]))) {
-			setAccessor(dom, name, old[name], old[name] = attrs[name], isSvgMode);
+			setAccessor(dom, name, old[name], old[name] = attrs[name], isSvgMode, options);
 		}
 	}
 }

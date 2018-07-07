@@ -115,16 +115,19 @@ declare namespace preact {
 		...children: ComponentChildren[]
 	): VNode<any>;
 
-	function render(node: ComponentChild, parent: Element | Document, mergeWith?: Element): Element;
+	function render(node: ComponentChild, parent: Element | Document, mergeWith?: Element, options?: RenderOptions): Element;
 	function rerender(): void;
 	function cloneElement(element: JSX.Element, props: any): JSX.Element;
 
-	var options: {
+	interface RenderOptions {
 		syncComponentUpdates?: boolean;
 		debounceRendering?: (render: () => void) => void;
-		vnode?: (vnode: VNode<any>) => void;
 		event?: (event: Event) => Event;
 		keyAttribute?: string;
+	}
+
+	const options: RenderOptions & {
+		vnode?: (vnode: VNode<any>) => void;
 	};
 }
 

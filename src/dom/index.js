@@ -1,6 +1,6 @@
 import { IS_NON_DIMENSIONAL } from '../constants';
-import options from '../options';
 import { awaitAndRaiseErrorToComponent, catchErrorInComponent } from "../vdom/component";
+import defaultOptions from '../options';
 
 /**
  * A DOM event listener
@@ -45,7 +45,7 @@ export function createNode(nodeName, isSvg) {
  * Remove a child node from its parent if attached.
  * @param {Node} node The node to remove
  */
-export function removeNode(node) {
+export function removeNode(node, options) {
 	let parentNode = node.parentNode;
 	if (parentNode) parentNode.removeChild(node);
 	if (options.nodeRemoved) options.nodeRemoved(node);
@@ -62,9 +62,10 @@ export function removeNode(node) {
  * @param {*} value An attribute value, such as a function to be used as an
  *  event handler
  * @param {boolean} isSvg Are we currently diffing inside an svg?
+ * @param {Object} options Render options
  * @private
  */
-export function setAccessor(node, name, old, value, isSvg) {
+export function setAccessor(node, name, old, value, isSvg, options) {
 	if (name==='className') name = 'class';
 
 
@@ -171,8 +172,12 @@ function eventProxy(e) {
 		} while (proto && proto !== objectProto);
 	}
 	let component = nearestComponent(this);
+	let options;
 	if (component) {
+		options = component._options;
 		component = component._ancestorComponent;
+	} else {
+		options = defaultOptions;
 	}
 	try {
 		return awaitAndRaiseErrorToComponent(this._listeners[e.type](options.event && options.event(simpleEvent) || simpleEvent), component);

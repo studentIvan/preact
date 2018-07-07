@@ -1,5 +1,4 @@
 import { SYNC_RENDER, NO_RENDER, FORCE_RENDER, ASYNC_RENDER, ATTR_KEY } from '../constants';
-import options from '../options';
 import { extend } from '../util';
 import { enqueueRender } from '../render-queue';
 import { getNodeProps } from './index';
@@ -44,7 +43,7 @@ export function setComponentProps(component, props, renderMode, context, mountAl
 	component._disable = false;
 
 	if (renderMode!==NO_RENDER) {
-		if (renderMode===SYNC_RENDER || options.syncComponentUpdates!==false || !component.base) {
+		if (renderMode===SYNC_RENDER || component._options.syncComponentUpdates!==false || !component.base) {
 			renderComponent(component, SYNC_RENDER, mountAll);
 		}
 		else {
@@ -107,7 +106,8 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 		skip = false,
 		snapshot = previousContext,
 		rendered, inst, cbase,
-		exception, clearCaught = component._caught;
+		exception, clearCaught = component._caught,
+		options = component._options;
 
 	try {
 		if (component.constructor.getDerivedStateFromProps) {
@@ -163,7 +163,7 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 					else {
 						toUnmount = inst;
 
-						component._component = inst = createComponent(childComponent, childProps, context, component);
+						component._component = inst = createComponent(childComponent, childProps, context, component, options);
 						inst.nextBase = inst.nextBase || nextBase;
 						inst._parentComponent = component;
 						setComponentProps(inst, childProps, NO_RENDER, context, false);
@@ -183,7 +183,7 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 
 					if (initialBase || renderMode===SYNC_RENDER) {
 						if (cbase) cbase._component = null;
-						base = diff(cbase, rendered, context, mountAll || !isUpdate, initialBase && initialBase.parentNode, component);
+						base = diff(cbase, rendered, context, mountAll || !isUpdate, initialBase && initialBase.parentNode, component, options);
 					}
 				}
 			} catch (e) {
@@ -201,7 +201,7 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 
 					if (!toUnmount) {
 						initialBase._component = null;
-						recollectNodeTree(initialBase, false);
+						recollectNodeTree(initialBase, false, options);
 					}
 				}
 			}
@@ -264,10 +264,11 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
  * @param {boolean} mountAll Whether or not to immediately mount all components
  * @param {import('../component').Component} [ancestorComponent] The nearest ancestor component
  *  beneath which the new component will be mounted
+ * @param {Object} options Render options
  * @returns {import('../dom').PreactElement} The created/mutated element
  * @private
  */
-export function buildComponentFromVNode(dom, vnode, context, mountAll, ancestorComponent) {
+export function buildComponentFromVNode(dom, vnode, context, mountAll, ancestorComponent, options) {
 	let c = dom && dom._component,
 		originalComponent = c,
 		oldDom = dom,
@@ -288,7 +289,7 @@ export function buildComponentFromVNode(dom, vnode, context, mountAll, ancestorC
 			dom = oldDom = null;
 		}
 
-		c = createComponent(vnode.nodeName, props, context, ancestorComponent);
+		c = createComponent(vnode.nodeName, props, context, ancestorComponent, options);
 		if (dom && !c.nextBase) {
 			c.nextBase = dom;
 			// passing dom/oldDom as nextBase will recycle it if unused, so bypass recycling on L229:
@@ -299,7 +300,7 @@ export function buildComponentFromVNode(dom, vnode, context, mountAll, ancestorC
 
 		if (oldDom && dom!==oldDom) {
 			oldDom._component = null;
-			recollectNodeTree(oldDom, false);
+			recollectNodeTree(oldDom, false, options);
 		}
 	}
 
@@ -317,6 +318,7 @@ export function unmountComponent(component) {
 	if (component._disable) return;
 	component._disable = true;
 
+	const options = component._options;
 	if (options.beforeUnmount) options.beforeUnmount(component);
 
 	let base = component.base;
@@ -341,10 +343,10 @@ export function unmountComponent(component) {
 
 		component.nextBase = base;
 
-		removeNode(base);
+		removeNode(base, options);
 		collectComponent(component);
 
-		removeChildren(base);
+		removeChildren(base, options);
 	}
 
 	if (component.__ref) component.__ref(null);
