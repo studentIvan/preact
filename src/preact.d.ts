@@ -690,6 +690,7 @@ declare global {
 			contentEditable?: boolean;
 			contextMenu?: string;
 			controls?: boolean;
+			controlsList?: string;
 			coords?: string;
 			crossOrigin?: string;
 			data?: string;
@@ -747,6 +748,7 @@ declare global {
 			optimum?: number;
 			pattern?: string;
 			placeholder?: string;
+			playsInline?: boolean;
 			poster?: string;
 			preload?: string;
 			radioGroup?: string;
