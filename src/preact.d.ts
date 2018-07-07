@@ -124,6 +124,8 @@ declare namespace preact {
 		debounceRendering?: (render: () => void) => void;
 		event?: (event: Event) => Event;
 		keyAttribute?: string;
+		listenerUpdated?: (node: Element, eventName: string) => void;
+		nodeRemoved?: (node: Element) => void;
 	}
 
 	const options: RenderOptions & {
