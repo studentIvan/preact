@@ -157,7 +157,7 @@ function idiff(dom, vnode, context, mountAll, componentRoot, options) {
 
 	if (props==null) {
 		props = out[ATTR_KEY] = {};
-		for (let a=out.attributes, i=a.length; i--; ) props[a[i].name] = a[i].value;
+		for (let a=out.attributes, length=a.length, i=0; i<length; i++) props[a[i].name] = a[i].value;
 	}
 
 	// Optimization: fast-path for elements containing a single TextNode:
