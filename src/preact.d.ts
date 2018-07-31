@@ -418,7 +418,7 @@ declare global {
 		}
 
 		interface MouseEvent extends UIEvent {
-			readonly altKey: number;
+			readonly altKey: boolean;
 			readonly button: number;
 			readonly buttons: number;
 			readonly ctrlKey: boolean;
