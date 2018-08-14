@@ -189,6 +189,7 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 			if (initialBase && base!==initialBase && inst!==initialChildComponent) {
 				let baseParent = initialBase.parentNode;
 				if (baseParent && base!==baseParent) {
+					if (typeof base === 'undefined') { return; }
 					baseParent.replaceChild(base, initialBase);
 
 					if (!toUnmount) {
