@@ -602,6 +602,9 @@
 				if (initialBase && base !== initialBase && inst !== initialChildComponent) {
 					var baseParent = initialBase.parentNode;
 					if (baseParent && base !== baseParent) {
+						if (typeof base === 'undefined') {
+							return;
+						}
 						baseParent.replaceChild(base, initialBase);
 
 						if (!toUnmount) {
